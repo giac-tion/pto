@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PTO Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --slate-900: #0f172a;
+            --slate-800: #1e293b;
+            --slate-700: #334155;
+            --slate-200: #e2e8f0;
+            --slate-100: #f1f5f9;
+            --emerald-500: #10b981;
+            --emerald-600: #059669;
+            --red-500: #ef4444;
+            --amber-500: #f59e0b;
+            --blue-500: #3b82f6;
+            --white: #ffffff;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, var(--slate-900) 0%, var(--slate-800) 100%);
+            color: var(--slate-700);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: var(--white);
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--slate-200);
+            font-size: 0.95rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--slate-900);
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--slate-100);
+            padding-bottom: 0.75rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-box {
+            background: var(--slate-100);
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+            border-left: 4px solid var(--emerald-500);
+        }
+
+        .stat-number {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--emerald-600);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--slate-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--slate-700);
+            margin-bottom: 0.4rem;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 0.7rem;
+            border: 1px solid var(--slate-200);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--blue-500);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--emerald-500);
+            color: var(--white);
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: var(--emerald-600);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--slate-100);
+            color: var(--slate-700);
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .btn-secondary:hover {
+            background: var(--slate-200);
+        }
+
+        .btn-danger {
+            background: var(--red-500);
+            color: var(--white);
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .calendar {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .calendar thead {
+            background: var(--slate-100);
+        }
+
+        .calendar th {
+            padding: 0.75rem;
+            text-align: center;
+            font-weight: 600;
+            color: var(--slate-700);
+            border-bottom: 2px solid var(--slate-200);
+        }
+
+        .calendar td {
+            padding: 0.5rem;
+            text-align: center;
+            border: 1px solid var(--slate-100);
+            height: 40px;
+            position: relative;
+        }
+
+        .calendar td.other-month {
+            background: var(--slate-50);
+            color: var(--slate-400);
+        }
+
+        .calendar td.today {
+            background: var(--blue-500);
+            color: var(--white);
+            font-weight: 600;
+        }
+
+        .calendar td.pto {
+            background: #dbeafe;
+            color: var(--slate-900);
+        }
+
+        .calendar td.pto.wfh {
+            background: #e0d5ff;
+            color: var(--slate-900);
+        }
+
+        .calendar td.holiday {
+            background: #fef3c7;
+            color: var(--slate-900);
+        }
+
+        .calendar-number {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .calendar-badge {
+            font-size: 0.65rem;
+            padding: 1px 3px;
+            border-radius: 2px;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .ledger-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .ledger-table thead {
+            background: var(--slate-100);
+        }
+
+        .ledger-table th {
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--slate-700);
+            border-bottom: 2px solid var(--slate-200);
+        }
+
+        .ledger-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--slate-100);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.3rem 0.7rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-approved {
+            background: #dcfce7;
+            color: var(--emerald-700);
+        }
+
+        .badge-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--slate-500);
+        }
+
+        .empty-state-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--slate-200);
+            margin-bottom: 1.5rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--slate-600);
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+            bottom: -2px;
+        }
+
+        .tab.active {
+            color: var(--emerald-600);
+            border-bottom-color: var(--emerald-600);
+        }
+
+        .tab:hover {
+            color: var(--slate-700);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--slate-900);
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--slate-400);
+        }
+
+        .modal-close:hover {
+            color: var(--slate-700);
+        }
+
+        .entry-item {
+            background: var(--slate-50);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+            border-left: 4px solid var(--emerald-500);
+        }
+
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .entry-dates {
+            font-weight: 600;
+            color: var(--slate-900);
+        }
+
+        .entry-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .entry-actions button {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #dcfce7;
+            color: var(--emerald-700);
+            border-left: 4px solid var(--emerald-500);
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid var(--red-500);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PTO Tracker</h1>
+            <p class="subtitle">Plan and track your paid time off</p>
+        </header>
+
+        <div class="grid">
+            <!-- Left Column: Calendar and Quick Stats -->
+            <div>
+                <div class="card">
+                    <div class="card-title">PTO Overview</div>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-number" id="totalPTO">0</div>
+                            <div class="stat-label">Total Days</div>
+                        </div>
+                        <div class="stat-box" style="border-left-color: var(--emerald-500);">
+                            <div class="stat-number" id="ptoCount">0</div>
+                            <div class="stat-label">PTO</div>
+                        </div>
+                        <div class="stat-box" style="border-left-color: var(--amber-500);">
+                            <div class="stat-number" id="wfhCount">0</div>
+                            <div class="stat-label">WFH</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <div id="calendarMonth" style="font-size: 1.1rem; font-weight: 600; color: var(--slate-900);"></div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button onclick="prevMonth()" style="padding: 0.4rem 0.8rem; border: 1px solid var(--slate-200); background: var(--white); border-radius: 4px; cursor: pointer;">←</button>
+                            <button onclick="nextMonth()" style="padding: 0.4rem 0.8rem; border: 1px solid var(--slate-200); background: var(--white); border-radius: 4px; cursor: pointer;">→</button>
+                        </div>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="calendar" id="calendar"></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Request Form and Ledger -->
+            <div>
+                <div class="card">
+                    <div class="card-title">Add Event</div>
+                    <div id="alert" class="alert"></div>
+                    <form id="requestForm">
+                        <div class="form-group">
+                            <label for="reason">Reason</label>
+                            <input type="text" id="reason" placeholder="What's this for?">
+                        </div>
+                        <div class="form-group">
+                            <label for="startDate">Start Date</label>
+                            <input type="date" id="startDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">End Date</label>
+                            <input type="date" id="endDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="ptoType">Type</label>
+                            <select id="ptoType" required>
+                                <option value="pto">PTO</option>
+                                <option value="wfh">WFH</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="button btn-primary">Add Event</button>
+                    </form>
+                </div>
+
+                <div class="card" style="margin-top: 1.5rem;">
+                    <div class="card-title">Events</div>
+                    <div id="requestList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Section -->
+        <div class="card">
+            <div class="card-title">Annual Summary</div>
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Total Days</th>
+                    </tr>
+                </thead>
+                <tbody id="summaryTable">
+                    <tr>
+                        <td colspan="2" class="empty-state">No data yet</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Data management
+        const storageKey = 'pto_requests';
+        
+        let ptoRequests = JSON.parse(localStorage.getItem(storageKey)) || [];
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+
+        // US Federal Holidays 2026-2028
+        const holidays = [
+            // 2026
+            { date: new Date(2026, 0, 1), name: "New Year's Day" },
+            { date: new Date(2026, 0, 19), name: "MLK Jr. Day" },
+            { date: new Date(2026, 1, 16), name: "Washington's Birthday" },
+            { date: new Date(2026, 3, 3), name: "Good Friday" },
+            { date: new Date(2026, 4, 25), name: "Memorial Day" },
+            { date: new Date(2026, 5, 19), name: "Juneteenth" },
+            { date: new Date(2026, 6, 3), name: "Independence Day Observed" },
+            { date: new Date(2026, 8, 7), name: "Labor Day" },
+            { date: new Date(2026, 10, 26), name: "Thanksgiving" },
+            { date: new Date(2026, 11, 25), name: "Christmas" },
+            
+            // 2027
+            { date: new Date(2027, 0, 1), name: "New Year's Day" },
+            { date: new Date(2027, 0, 18), name: "MLK Jr. Day" },
+            { date: new Date(2027, 1, 15), name: "Washington's Birthday" },
+            { date: new Date(2027, 2, 26), name: "Good Friday" },
+            { date: new Date(2027, 4, 31), name: "Memorial Day" },
+            { date: new Date(2027, 5, 18), name: "Juneteenth Observed" },
+            { date: new Date(2027, 6, 5), name: "Independence Day Observed" },
+            { date: new Date(2027, 8, 6), name: "Labor Day" },
+            { date: new Date(2027, 10, 25), name: "Thanksgiving" },
+            { date: new Date(2027, 11, 24), name: "Christmas Observed" },
+            
+            // 2028
+            { date: new Date(2028, 0, 17), name: "MLK Jr. Day" },
+            { date: new Date(2028, 1, 21), name: "Washington's Birthday" },
+            { date: new Date(2028, 3, 14), name: "Good Friday" },
+            { date: new Date(2028, 4, 29), name: "Memorial Day" },
+            { date: new Date(2028, 5, 19), name: "Juneteenth" },
+            { date: new Date(2028, 6, 4), name: "Independence Day" },
+            { date: new Date(2028, 8, 4), name: "Labor Day" },
+            { date: new Date(2028, 10, 23), name: "Thanksgiving" },
+            { date: new Date(2028, 11, 25), name: "Christmas" }
+        ];
+
+        function isHoliday(date) {
+            return holidays.some(h => h.date.toDateString() === date.toDateString());
+        }
+
+        function getHolidayName(date) {
+            const holiday = holidays.find(h => h.date.toDateString() === date.toDateString());
+            return holiday ? holiday.name : null;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setDefaultDates();
+            renderCalendar();
+            updateStats();
+            renderLedger();
+            renderSummary();
+            setupEventListeners();
+        });
+
+        function setDefaultDates() {
+            const today = new Date();
+            document.getElementById('startDate').valueAsDate = today;
+            const nextWeek = new Date(today);
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            document.getElementById('endDate').valueAsDate = nextWeek;
+        }
+
+        function setupEventListeners() {
+            document.getElementById('requestForm').addEventListener('submit', handleSubmit);
+        }
+
+        function handleSubmit(e) {
+            e.preventDefault();
+            
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const ptoType = document.getElementById('ptoType').value;
+            const reason = document.getElementById('reason').value;
+
+            if (new Date(startDate) > new Date(endDate)) {
+                showAlert('End date must be after start date', 'error');
+                return;
+            }
+
+            const newRequest = {
+                id: Date.now(),
+                startDate,
+                endDate,
+                type: ptoType,
+                reason,
+                days: calculateBusinessDays(startDate, endDate),
+                created: new Date().toISOString()
+            };
+
+            ptoRequests.push(newRequest);
+            saveData();
+            showAlert('Event added successfully', 'success');
+            document.getElementById('requestForm').reset();
+            setDefaultDates();
+            renderCalendar();
+            updateStats();
+            renderLedger();
+            renderSummary();
+        }
+
+        function calculateBusinessDays(start, end) {
+            let count = 0;
+            const current = new Date(start);
+            const endDate = new Date(end);
+
+            while (current <= endDate) {
+                const dayOfWeek = current.getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    count++;
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            return count;
+        }
+
+        function renderCalendar() {
+            const year = currentYear;
+            const month = currentMonth;
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const prevLastDay = new Date(year, month, 0);
+            
+            const cal = document.getElementById('calendar');
+            cal.innerHTML = '';
+
+            // Update month display
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                               'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('calendarMonth').textContent = `${monthNames[month]} ${year}`;
+
+            // Header
+            const headerRow = cal.insertRow();
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            days.forEach(day => {
+                const th = document.createElement('th');
+                th.textContent = day;
+                headerRow.appendChild(th);
+            });
+
+            // Build the first week as one row so leading days keep their weekday columns.
+            let row = cal.insertRow();
+            let dateCounter = prevLastDay.getDate() - firstDay.getDay() + 1;
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                const cell = row.insertCell();
+                cell.textContent = dateCounter++;
+                cell.classList.add('other-month');
+            }
+
+            // Current month
+            const now = new Date();
+            for (let date = 1; date <= lastDay.getDate(); date++) {
+                if (row.cells.length === 7) {
+                    row = cal.insertRow();
+                }
+                const cell = row.insertCell();
+                
+                const cellDate = new Date(year, month, date);
+                const isToday = cellDate.toDateString() === now.toDateString();
+                const ptoOnDate = getPTOForDate(cellDate);
+                const holiday = isHoliday(cellDate);
+
+                cell.innerHTML = `<div class="calendar-number">${date}</div>`;
+                
+                if (isToday) {
+                    cell.classList.add('today');
+                }
+                
+                if (holiday) {
+                    cell.classList.add('holiday');
+                    const badge = document.createElement('div');
+                    badge.className = 'calendar-badge';
+                    badge.textContent = '🇺🇸';
+                    badge.title = getHolidayName(cellDate);
+                    cell.appendChild(badge);
+                }
+                
+                if (ptoOnDate) {
+                    cell.classList.add('pto', ptoOnDate.type);
+                    const badge = document.createElement('div');
+                    badge.className = 'calendar-badge';
+                    badge.textContent = ptoOnDate.type.toUpperCase()[0];
+                    cell.appendChild(badge);
+                }
+            }
+
+            // Next month days
+            let nextDate = 1;
+            for (let i = row.cells.length; i < 7; i++) {
+                const cell = row.insertCell();
+                cell.textContent = nextDate++;
+                cell.classList.add('other-month');
+            }
+        }
+
+        function prevMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar();
+        }
+
+        function getPTOForDate(date) {
+            for (let req of ptoRequests) {
+                const start = new Date(req.startDate);
+                const end = new Date(req.endDate);
+                if (date >= start && date <= end) {
+                    return req;
+                }
+            }
+            return null;
+        }
+
+        function updateStats() {
+            const total = ptoRequests.reduce((sum, req) => sum + (req.days || 0), 0);
+            const ptoDays = ptoRequests
+                .filter(req => req.type === 'pto')
+                .reduce((sum, req) => sum + (req.days || 0), 0);
+            const wfhDays = ptoRequests
+                .filter(req => req.type === 'wfh')
+                .reduce((sum, req) => sum + (req.days || 0), 0);
+
+            document.getElementById('totalPTO').textContent = total;
+            document.getElementById('ptoCount').textContent = ptoDays;
+            document.getElementById('wfhCount').textContent = wfhDays;
+        }
+
+        function renderLedger() {
+            const list = document.getElementById('requestList');
+            const allRequests = ptoRequests.sort((a, b) => new Date(b.created) - new Date(a.created));
+
+            if (allRequests.length === 0) {
+                list.innerHTML = '<div class="empty-state">No events yet</div>';
+                return;
+            }
+
+            list.innerHTML = allRequests.map(req => `
+                <div class="entry-item">
+                    <div class="entry-header">
+                        <div class="entry-dates">
+                            ${formatDate(req.startDate)} → ${formatDate(req.endDate)}
+                            <span style="color: var(--slate-500); font-weight: normal; font-size: 0.9rem;">
+                                (${req.days} days, ${req.type.toUpperCase()})
+                            </span>
+                        </div>
+                    </div>
+                    ${req.reason ? `<div style="font-size: 0.85rem; color: var(--slate-600); margin-bottom: 0.5rem;">${req.reason}</div>` : ''}
+                    <div class="entry-actions">
+                        <button class="button btn-secondary" onclick="editRequest(${req.id})">Edit</button>
+                        <button class="button btn-danger" onclick="deleteRequest(${req.id})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderSummary() {
+            const tbody = document.getElementById('summaryTable');
+
+            const ptoDays = ptoRequests
+                .filter(req => req.type === 'pto')
+                .reduce((sum, req) => sum + (req.days || 0), 0);
+            const wfhDays = ptoRequests
+                .filter(req => req.type === 'wfh')
+                .reduce((sum, req) => sum + (req.days || 0), 0);
+
+            if (ptoDays === 0 && wfhDays === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="empty-state">No data yet</td></tr>';
+                return;
+            }
+
+            let html = '';
+            if (ptoDays > 0) {
+                html += `<tr><td>PTO</td><td>${ptoDays}</td></tr>`;
+            }
+            if (wfhDays > 0) {
+                html += `<tr><td>WFH</td><td>${wfhDays}</td></tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+
+
+
+        function editRequest(id) {
+            const req = ptoRequests.find(r => r.id === id);
+            if (!req) return;
+
+            document.getElementById('startDate').value = req.startDate;
+            document.getElementById('endDate').value = req.endDate;
+            document.getElementById('ptoType').value = req.type;
+            document.getElementById('reason').value = req.reason || '';
+            document.getElementById('status').value = req.status;
+
+            deleteRequest(id);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteRequest(id) {
+            ptoRequests = ptoRequests.filter(req => req.id !== id);
+            saveData();
+            showAlert('Event deleted', 'success');
+            renderCalendar();
+            updateStats();
+            renderLedger();
+            renderSummary();
+        }
+
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert show alert-${type}`;
+            setTimeout(() => alert.classList.remove('show'), 3000);
+        }
+
+        function formatDate(dateStr) {
+            return new Date(dateStr).toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function saveData() {
+            localStorage.setItem(storageKey, JSON.stringify(ptoRequests));
+        }
+
+        // Export data as JSON
+        function exportData() {
+            const dataStr = JSON.stringify(ptoRequests, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `pto_requests_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+        }
+
+        // Import data from JSON
+        function importData(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        ptoRequests = imported;
+                        saveData();
+                        renderCalendar();
+                        updateStats();
+                        renderLedger();
+                        renderSummary();
+                        showAlert('Data imported successfully', 'success');
+                    }
+                } catch (err) {
+                    showAlert('Invalid file format', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
