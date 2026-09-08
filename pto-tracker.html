@@ -31,11 +31,11 @@ tml lang="en">
             background: linear-gradient(135deg, var(--slate-900) 0%, var(--slate-800) 100%);
             color: var(--slate-700);
             min-height: 100vh;
-            padding: 2rem 1rem;
+            padding: 2rem clamp(1rem, 3vw, 3rem);
         }
 
         .container {
-            max-width: 1200px;
+            width: 100%;
             margin: 0 auto;
         }
 
@@ -58,14 +58,29 @@ tml lang="en">
 
         .grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: minmax(280px, 0.9fr) minmax(420px, 1.35fr) minmax(280px, 0.9fr);
             gap: 2rem;
             margin-bottom: 2rem;
         }
 
         @media (max-width: 1024px) {
             .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .add-event-column {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .grid {
                 grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .add-event-column {
+                grid-column: auto;
             }
         }
 
@@ -250,6 +265,121 @@ tml lang="en">
         .calendar td.holiday {
             background: #fef3c7;
             color: var(--slate-900);
+        }
+
+        .calendar td.half-holiday {
+            background: linear-gradient(135deg, #fef3c7 0 50%, var(--white) 50% 100%);
+        }
+
+        .calendar td.pto.half-holiday {
+            background: linear-gradient(135deg, #fef3c7 0 50%, #dbeafe 50% 100%);
+        }
+
+        .calendar-month-card {
+            padding: 1rem;
+        }
+
+        .calendar-month-title {
+            color: var(--slate-900);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .calendar-month-card + .calendar-month-card {
+            margin-top: 1rem;
+        }
+
+        .calendar-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .calendar-controls button,
+        .event-control {
+            border: 1px solid var(--slate-200);
+            background: var(--white);
+            color: var(--slate-700);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .calendar-controls button {
+            padding: 0.4rem 0.8rem;
+            font-size: 1rem;
+        }
+
+        .calendar-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 0.75rem;
+            color: var(--slate-600);
+            font-size: 0.72rem;
+            margin-top: 0.75rem;
+        }
+
+        .legend-item::before {
+            content: '';
+            display: inline-block;
+            width: 0.65rem;
+            height: 0.65rem;
+            margin-right: 0.25rem;
+            vertical-align: -1px;
+            background: #fef3c7;
+        }
+
+        .legend-item.half::before {
+            background: linear-gradient(135deg, #fef3c7 0 50%, var(--white) 50% 100%);
+            border: 1px solid var(--slate-200);
+        }
+
+        .event-log {
+            overflow-x: auto;
+        }
+
+        .event-log .ledger-table {
+            min-width: 560px;
+        }
+
+        .event-reason {
+            color: var(--slate-900);
+            font-weight: 600;
+        }
+
+        .event-date {
+            white-space: nowrap;
+        }
+
+        .event-controls {
+            display: flex;
+            gap: 0.25rem;
+            white-space: nowrap;
+        }
+
+        .event-control {
+            width: 1.9rem;
+            height: 1.9rem;
+            padding: 0;
+            font-size: 0.95rem;
+            line-height: 1;
+        }
+
+        .event-control.mode-toggle {
+            font-weight: 700;
+            color: var(--emerald-600);
+        }
+
+        .event-control:hover,
+        .calendar-controls button:hover {
+            background: var(--slate-100);
+        }
+
+        .event-type {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
         }
 
         .calendar-number {
@@ -471,42 +601,60 @@ tml lang="en">
         </header>
 
         <div class="grid">
-            <!-- Left Column: Calendar and Quick Stats -->
-            <div>
+            <div class="calendar-column">
+                <div class="card">
+                    <div class="calendar-controls">
+                        <button type="button" onclick="prevMonth()" aria-label="Show previous three months">←</button>
+                        <strong>Calendar</strong>
+                        <button type="button" onclick="nextMonth()" aria-label="Show next three months">→</button>
+                    </div>
+                    <div id="calendarStack"></div>
+                    <div class="calendar-legend">
+                        <span class="legend-item">Full holiday</span>
+                        <span class="legend-item half">Half-day</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overview-column">
                 <div class="card">
                     <div class="card-title">PTO Overview</div>
                     <div class="stats-grid">
                         <div class="stat-box">
-                            <div class="stat-number" id="totalPTO">0</div>
-                            <div class="stat-label">Total Days</div>
+                            <div class="stat-number" id="totalPTO">20</div>
+                            <div class="stat-label">PTO Days Left</div>
                         </div>
                         <div class="stat-box" style="border-left-color: var(--emerald-500);">
                             <div class="stat-number" id="ptoCount">0</div>
-                            <div class="stat-label">PTO</div>
+                            <div class="stat-label">PTO Scheduled</div>
                         </div>
                         <div class="stat-box" style="border-left-color: var(--amber-500);">
                             <div class="stat-number" id="wfhCount">0</div>
-                            <div class="stat-label">WFH</div>
+                            <div class="stat-label">WFH Scheduled</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="card" style="margin-top: 1.5rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <div id="calendarMonth" style="font-size: 1.1rem; font-weight: 600; color: var(--slate-900);"></div>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <button onclick="prevMonth()" style="padding: 0.4rem 0.8rem; border: 1px solid var(--slate-200); background: var(--white); border-radius: 4px; cursor: pointer;">←</button>
-                            <button onclick="nextMonth()" style="padding: 0.4rem 0.8rem; border: 1px solid var(--slate-200); background: var(--white); border-radius: 4px; cursor: pointer;">→</button>
-                        </div>
-                    </div>
-                    <div style="overflow-x: auto;">
-                        <table class="calendar" id="calendar"></table>
+                    <div class="card-title">Event Log</div>
+                    <div class="event-log">
+                        <table class="ledger-table">
+                            <thead>
+                                <tr>
+                                    <th>Reason</th>
+                                    <th>Type</th>
+                                    <th>Days</th>
+                                    <th>Start / End</th>
+                                    <th>Adjust</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestList"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column: Request Form and Ledger -->
-            <div>
+            <div class="add-event-column">
                 <div class="card">
                     <div class="card-title">Add Event</div>
                     <div id="alert" class="alert"></div>
@@ -515,13 +663,15 @@ tml lang="en">
                             <label for="reason">Reason</label>
                             <input type="text" id="reason" placeholder="What's this for?">
                         </div>
-                        <div class="form-group">
-                            <label for="startDate">Start Date</label>
-                            <input type="date" id="startDate" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="endDate">End Date</label>
-                            <input type="date" id="endDate" required>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="startDate">Start Date</label>
+                                <input type="date" id="startDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="endDate">End Date</label>
+                                <input type="date" id="endDate" required>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="ptoType">Type</label>
@@ -533,85 +683,102 @@ tml lang="en">
                         <button type="submit" class="button btn-primary">Add Event</button>
                     </form>
                 </div>
-
-                <div class="card" style="margin-top: 1.5rem;">
-                    <div class="card-title">Events</div>
-                    <div id="requestList"></div>
-                </div>
             </div>
         </div>
 
-        <!-- Analytics Section -->
-        <div class="card">
-            <div class="card-title">Annual Summary</div>
-            <table class="ledger-table">
-                <thead>
-                    <tr>
-                        <th>Type</th>
-                        <th>Total Days</th>
-                    </tr>
-                </thead>
-                <tbody id="summaryTable">
-                    <tr>
-                        <td colspan="2" class="empty-state">No data yet</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
     </div>
 
     <script>
         // Data management
         const storageKey = 'pto_requests';
         
-        let ptoRequests = JSON.parse(localStorage.getItem(storageKey)) || [];
+        let ptoRequests = (() => {
+            try {
+                return JSON.parse(localStorage.getItem(storageKey) || '[]');
+            } catch (error) {
+                return [];
+            }
+        })();
         let currentMonth = new Date().getMonth();
         let currentYear = new Date().getFullYear();
 
-        // US Federal Holidays 2026-2028
+        const PTO_ALLOWANCE = 20;
+
+        // Full holidays are excluded from event totals; half-days remain eligible weekdays.
         const holidays = [
-            // 2026
-            { date: new Date(2026, 0, 1), name: "New Year's Day" },
-            { date: new Date(2026, 0, 19), name: "MLK Jr. Day" },
-            { date: new Date(2026, 1, 16), name: "Washington's Birthday" },
-            { date: new Date(2026, 3, 3), name: "Good Friday" },
-            { date: new Date(2026, 4, 25), name: "Memorial Day" },
-            { date: new Date(2026, 5, 19), name: "Juneteenth" },
-            { date: new Date(2026, 6, 3), name: "Independence Day Observed" },
-            { date: new Date(2026, 8, 7), name: "Labor Day" },
-            { date: new Date(2026, 10, 26), name: "Thanksgiving" },
-            { date: new Date(2026, 11, 25), name: "Christmas" },
-            
-            // 2027
-            { date: new Date(2027, 0, 1), name: "New Year's Day" },
-            { date: new Date(2027, 0, 18), name: "MLK Jr. Day" },
-            { date: new Date(2027, 1, 15), name: "Washington's Birthday" },
-            { date: new Date(2027, 2, 26), name: "Good Friday" },
-            { date: new Date(2027, 4, 31), name: "Memorial Day" },
-            { date: new Date(2027, 5, 18), name: "Juneteenth Observed" },
-            { date: new Date(2027, 6, 5), name: "Independence Day Observed" },
-            { date: new Date(2027, 8, 6), name: "Labor Day" },
-            { date: new Date(2027, 10, 25), name: "Thanksgiving" },
-            { date: new Date(2027, 11, 24), name: "Christmas Observed" },
-            
-            // 2028
-            { date: new Date(2028, 0, 17), name: "MLK Jr. Day" },
-            { date: new Date(2028, 1, 21), name: "Washington's Birthday" },
-            { date: new Date(2028, 3, 14), name: "Good Friday" },
-            { date: new Date(2028, 4, 29), name: "Memorial Day" },
-            { date: new Date(2028, 5, 19), name: "Juneteenth" },
-            { date: new Date(2028, 6, 4), name: "Independence Day" },
-            { date: new Date(2028, 8, 4), name: "Labor Day" },
-            { date: new Date(2028, 10, 23), name: "Thanksgiving" },
-            { date: new Date(2028, 11, 25), name: "Christmas" }
+            { date: '2026-01-01', name: "New Year's Day", kind: 'full' },
+            { date: '2026-01-19', name: 'Martin Luther King, Jr. Day', kind: 'full' },
+            { date: '2026-02-16', name: "Washington's Birthday", kind: 'full' },
+            { date: '2026-04-03', name: 'Good Friday', kind: 'full' },
+            { date: '2026-05-25', name: 'Memorial Day', kind: 'full' },
+            { date: '2026-06-19', name: 'Juneteenth National Independence Day', kind: 'full' },
+            { date: '2026-07-03', name: 'Independence Day observed', kind: 'full' },
+            { date: '2026-09-07', name: 'Labor Day', kind: 'full' },
+            { date: '2026-11-26', name: 'Thanksgiving Day', kind: 'full' },
+            { date: '2026-11-27', name: 'Day after Thanksgiving', kind: 'half' },
+            { date: '2026-12-24', name: 'Christmas Eve early close', kind: 'half' },
+            { date: '2026-12-25', name: 'Christmas Day', kind: 'full' },
+            { date: '2027-01-01', name: "New Year's Day", kind: 'full' },
+            { date: '2027-01-18', name: 'Martin Luther King, Jr. Day', kind: 'full' },
+            { date: '2027-02-15', name: "Washington's Birthday", kind: 'full' },
+            { date: '2027-03-26', name: 'Good Friday', kind: 'full' },
+            { date: '2027-05-31', name: 'Memorial Day', kind: 'full' },
+            { date: '2027-06-18', name: 'Juneteenth observed', kind: 'full' },
+            { date: '2027-07-05', name: 'Independence Day observed', kind: 'full' },
+            { date: '2027-09-06', name: 'Labor Day', kind: 'full' },
+            { date: '2027-11-25', name: 'Thanksgiving Day', kind: 'full' },
+            { date: '2027-11-26', name: 'Day after Thanksgiving', kind: 'half' },
+            { date: '2027-12-24', name: 'Christmas Day observed', kind: 'full' },
+            { date: '2028-01-17', name: 'Martin Luther King, Jr. Day', kind: 'full' },
+            { date: '2028-02-21', name: "Washington's Birthday", kind: 'full' },
+            { date: '2028-04-14', name: 'Good Friday', kind: 'full' },
+            { date: '2028-05-29', name: 'Memorial Day', kind: 'full' },
+            { date: '2028-06-19', name: 'Juneteenth National Independence Day', kind: 'full' },
+            { date: '2028-07-04', name: 'Independence Day', kind: 'full' },
+            { date: '2028-07-03', name: 'Independence Day early close', kind: 'half' },
+            { date: '2028-09-04', name: 'Labor Day', kind: 'full' },
+            { date: '2028-11-23', name: 'Thanksgiving Day', kind: 'full' },
+            { date: '2028-11-24', name: 'Day after Thanksgiving', kind: 'half' },
+            { date: '2028-12-25', name: 'Christmas Day', kind: 'full' }
         ];
 
+        ptoRequests = normalizeRequests(ptoRequests);
+
+        function normalizeRequests(requests) {
+            return requests.filter(request => isValidDateInput(request.startDate) && isValidDateInput(request.endDate))
+                .map(request => {
+                    const startDate = request.startDate;
+                    const endDate = request.endDate;
+                    return {
+                        id: request.id || Date.now() + Math.random(),
+                        startDate,
+                        endDate,
+                        type: request.type === 'wfh' ? 'wfh' : 'pto',
+                        reason: request.reason || '',
+                        days: calculateBusinessDays(startDate, endDate),
+                        created: request.created || new Date().toISOString()
+                    };
+                })
+                .filter(request => parseDateInput(request.startDate) <= parseDateInput(request.endDate));
+        }
+
+        function isValidDateInput(dateStr) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr || '')) return false;
+            const date = parseDateInput(dateStr);
+            return !Number.isNaN(date.getTime()) && formatDateInput(date) === dateStr;
+        }
+
+        function getHoliday(date) {
+            const dateKey = formatDateInput(date);
+            return holidays.find(h => h.date === dateKey) || null;
+        }
+
         function isHoliday(date) {
-            return holidays.some(h => h.date.toDateString() === date.toDateString());
+            return Boolean(getHoliday(date));
         }
 
         function getHolidayName(date) {
-            const holiday = holidays.find(h => h.date.toDateString() === date.toDateString());
+            const holiday = getHoliday(date);
             return holiday ? holiday.name : null;
         }
 
@@ -621,7 +788,6 @@ tml lang="en">
             renderCalendar();
             updateStats();
             renderLedger();
-            renderSummary();
             setupEventListeners();
         });
 
@@ -645,7 +811,7 @@ tml lang="en">
             const ptoType = document.getElementById('ptoType').value;
             const reason = document.getElementById('reason').value;
 
-            if (parseDateInput(startDate) > parseDateInput(endDate)) {
+            if (!isValidDateInput(startDate) || !isValidDateInput(endDate) || parseDateInput(startDate) > parseDateInput(endDate)) {
                 showAlert('End date must be after start date', 'error');
                 return;
             }
@@ -668,17 +834,18 @@ tml lang="en">
             renderCalendar();
             updateStats();
             renderLedger();
-            renderSummary();
         }
 
         function calculateBusinessDays(start, end) {
+            if (!isValidDateInput(start) || !isValidDateInput(end)) return 0;
             let count = 0;
             const current = parseDateInput(start);
             const endDate = parseDateInput(end);
 
             while (current <= endDate) {
                 const dayOfWeek = current.getDay();
-                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                const holiday = getHoliday(current);
+                if (dayOfWeek !== 0 && dayOfWeek !== 6 && (!holiday || holiday.kind === 'half')) {
                     count++;
                 }
                 current.setDate(current.getDate() + 1);
@@ -686,68 +853,72 @@ tml lang="en">
             return count;
         }
 
+        function isEligibleDate(date) {
+            const holiday = getHoliday(date);
+            return date.getDay() !== 0 && date.getDay() !== 6 && (!holiday || holiday.kind === 'half');
+        }
+
+        function shiftEligibleDate(date, direction) {
+            const shifted = new Date(date);
+            do {
+                shifted.setDate(shifted.getDate() + direction);
+            } while (!isEligibleDate(shifted));
+            return shifted;
+        }
+
         function renderCalendar() {
-            const year = currentYear;
-            const month = currentMonth;
-            
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const prevLastDay = new Date(year, month, 0);
-            
-            const cal = document.getElementById('calendar');
-            cal.innerHTML = '';
+            const stack = document.getElementById('calendarStack');
+            stack.innerHTML = '';
+            for (let offset = 0; offset < 3; offset++) {
+                const date = new Date(currentYear, currentMonth + offset, 1);
+                stack.appendChild(renderMonth(date.getFullYear(), date.getMonth()));
+            }
+        }
 
-            // Update month display
-            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                               'July', 'August', 'September', 'October', 'November', 'December'];
-            document.getElementById('calendarMonth').textContent = `${monthNames[month]} ${year}`;
+        function renderMonth(year, month) {
+            const card = document.createElement('div');
+            card.className = 'calendar-month-card';
+            const title = document.createElement('div');
+            title.className = 'calendar-month-title';
+            title.textContent = new Date(year, month, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            card.appendChild(title);
 
-            // Header
-            const headerRow = cal.insertRow();
-            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            days.forEach(day => {
-                const th = document.createElement('th');
-                th.textContent = day;
-                headerRow.appendChild(th);
+            const table = document.createElement('table');
+            table.className = 'calendar';
+            const header = table.insertRow();
+            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
+                const cell = document.createElement('th');
+                cell.textContent = day;
+                header.appendChild(cell);
             });
 
-            // Build the first week as one row so leading days keep their weekday columns.
-            let row = cal.insertRow();
-            let dateCounter = prevLastDay.getDate() - firstDay.getDay() + 1;
-            for (let i = 0; i < firstDay.getDay(); i++) {
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            let row = table.insertRow();
+            for (let index = 0; index < firstDay.getDay(); index++) {
                 const cell = row.insertCell();
-                cell.textContent = dateCounter++;
-                cell.classList.add('other-month');
+                cell.className = 'other-month';
+                const date = new Date(year, month, index - firstDay.getDay() + 1);
+                cell.textContent = date.getDate();
             }
 
-            // Current month
-            const now = new Date();
-            for (let date = 1; date <= lastDay.getDate(); date++) {
-                if (row.cells.length === 7) {
-                    row = cal.insertRow();
-                }
+            const today = formatDateInput(new Date());
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                if (row.cells.length === 7) row = table.insertRow();
+                const cellDate = new Date(year, month, day);
                 const cell = row.insertCell();
-                
-                const cellDate = new Date(year, month, date);
-                const isToday = cellDate.toDateString() === now.toDateString();
+                const holiday = getHoliday(cellDate);
                 const ptoOnDate = getPTOForDate(cellDate);
-                const holiday = isHoliday(cellDate);
-
-                cell.innerHTML = `<div class="calendar-number">${date}</div>`;
-                
-                if (isToday) {
-                    cell.classList.add('today');
-                }
-                
+                cell.innerHTML = `<div class="calendar-number">${day}</div>`;
+                if (formatDateInput(cellDate) === today) cell.classList.add('today');
                 if (holiday) {
-                    cell.classList.add('holiday');
+                    cell.classList.add(holiday.kind === 'half' ? 'half-holiday' : 'holiday');
+                    cell.title = `${holiday.name} (${holiday.kind === 'half' ? 'half-day' : 'full-day'})`;
                     const badge = document.createElement('div');
                     badge.className = 'calendar-badge';
-                    badge.textContent = '🇺🇸';
-                    badge.title = getHolidayName(cellDate);
+                    badge.textContent = holiday.kind === 'half' ? '½' : 'H';
                     cell.appendChild(badge);
                 }
-                
                 if (ptoOnDate) {
                     cell.classList.add('pto', ptoOnDate.type);
                     const badge = document.createElement('div');
@@ -757,13 +928,14 @@ tml lang="en">
                 }
             }
 
-            // Next month days
             let nextDate = 1;
-            for (let i = row.cells.length; i < 7; i++) {
+            while (row.cells.length < 7) {
                 const cell = row.insertCell();
+                cell.className = 'other-month';
                 cell.textContent = nextDate++;
-                cell.classList.add('other-month');
             }
+            card.appendChild(table);
+            return card;
         }
 
         function prevMonth() {
@@ -796,7 +968,6 @@ tml lang="en">
         }
 
         function updateStats() {
-            const total = ptoRequests.reduce((sum, req) => sum + (req.days || 0), 0);
             const ptoDays = ptoRequests
                 .filter(req => req.type === 'pto')
                 .reduce((sum, req) => sum + (req.days || 0), 0);
@@ -804,88 +975,77 @@ tml lang="en">
                 .filter(req => req.type === 'wfh')
                 .reduce((sum, req) => sum + (req.days || 0), 0);
 
-            document.getElementById('totalPTO').textContent = total;
+            document.getElementById('totalPTO').textContent = Math.max(0, PTO_ALLOWANCE - ptoDays);
             document.getElementById('ptoCount').textContent = ptoDays;
             document.getElementById('wfhCount').textContent = wfhDays;
         }
 
         function renderLedger() {
             const list = document.getElementById('requestList');
-            const allRequests = ptoRequests.sort((a, b) => new Date(b.created) - new Date(a.created));
+            const allRequests = [...ptoRequests].sort((a, b) => new Date(b.created) - new Date(a.created));
 
             if (allRequests.length === 0) {
-                list.innerHTML = '<div class="empty-state">No events yet</div>';
+                list.innerHTML = '<tr><td colspan="5" class="empty-state">No events yet</td></tr>';
                 return;
             }
 
             list.innerHTML = allRequests.map(req => `
-                <div class="entry-item">
-                    <div class="entry-header">
-                        <div class="entry-dates">
-                            ${formatDate(req.startDate)} → ${formatDate(req.endDate)}
-                            <span style="color: var(--slate-500); font-weight: normal; font-size: 0.9rem;">
-                                (${req.days} days, ${req.type.toUpperCase()})
-                            </span>
+                <tr>
+                    <td><span class="event-reason">${escapeHtml(req.reason || 'Unspecified')}</span></td>
+                    <td><span class="event-type">${req.type.toUpperCase()}</span></td>
+                    <td>${req.days}</td>
+                    <td class="event-date">${formatDate(req.startDate)} → ${formatDate(req.endDate)}</td>
+                    <td>
+                        <div class="event-controls" aria-label="Adjust ${escapeHtml(req.reason || 'event')}">
+                            <button class="event-control mode-toggle" onclick="toggleAdjustmentMode()" title="Toggle extend or shorten">${adjustmentMode === 'extend' ? '+' : '−'}</button>
+                            <button class="event-control" onclick="adjustEvent(${req.id}, 'front')" title="${adjustmentMode === 'extend' ? 'Extend' : 'Shorten'} from front">↑</button>
+                            <button class="event-control" onclick="adjustEvent(${req.id}, 'back')" title="${adjustmentMode === 'extend' ? 'Extend' : 'Shorten'} from back">↓</button>
+                            <button class="event-control" onclick="deleteRequest(${req.id})" title="Delete event">×</button>
                         </div>
-                    </div>
-                    ${req.reason ? `<div style="font-size: 0.85rem; color: var(--slate-600); margin-bottom: 0.5rem;">${req.reason}</div>` : ''}
-                    <div class="entry-actions">
-                        <button class="button btn-secondary" onclick="editRequest(${req.id})">Edit</button>
-                        <button class="button btn-danger" onclick="deleteRequest(${req.id})">Delete</button>
-                    </div>
-                </div>
+                    </td>
+                </tr>
             `).join('');
         }
 
-        function renderSummary() {
-            const tbody = document.getElementById('summaryTable');
 
-            const ptoDays = ptoRequests
-                .filter(req => req.type === 'pto')
-                .reduce((sum, req) => sum + (req.days || 0), 0);
-            const wfhDays = ptoRequests
-                .filter(req => req.type === 'wfh')
-                .reduce((sum, req) => sum + (req.days || 0), 0);
-
-            if (ptoDays === 0 && wfhDays === 0) {
-                tbody.innerHTML = '<tr><td colspan="2" class="empty-state">No data yet</td></tr>';
-                return;
-            }
-
-            let html = '';
-            if (ptoDays > 0) {
-                html += `<tr><td>PTO</td><td>${ptoDays}</td></tr>`;
-            }
-            if (wfhDays > 0) {
-                html += `<tr><td>WFH</td><td>${wfhDays}</td></tr>`;
-            }
-            tbody.innerHTML = html;
-        }
-
-
-
-        function editRequest(id) {
-            const req = ptoRequests.find(r => r.id === id);
-            if (!req) return;
-
-            document.getElementById('startDate').value = req.startDate;
-            document.getElementById('endDate').value = req.endDate;
-            document.getElementById('ptoType').value = req.type;
-            document.getElementById('reason').value = req.reason || '';
-            document.getElementById('status').value = req.status;
-
-            deleteRequest(id);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
 
         function deleteRequest(id) {
             ptoRequests = ptoRequests.filter(req => req.id !== id);
             saveData();
-            showAlert('Event deleted', 'success');
             renderCalendar();
             updateStats();
             renderLedger();
-            renderSummary();
+        }
+
+        let adjustmentMode = 'extend';
+
+        function toggleAdjustmentMode() {
+            adjustmentMode = adjustmentMode === 'extend' ? 'shorten' : 'extend';
+            renderLedger();
+        }
+
+        function adjustEvent(id, edge) {
+            const request = ptoRequests.find(item => item.id === id);
+            if (!request) return;
+
+            const start = parseDateInput(request.startDate);
+            const end = parseDateInput(request.endDate);
+            const direction = adjustmentMode === 'extend' ? 1 : -1;
+            if (edge === 'front') {
+                const candidate = shiftEligibleDate(start, direction > 0 ? -1 : 1);
+                if (direction < 0 && candidate > end) return;
+                request.startDate = formatDateInput(candidate);
+            } else {
+                const candidate = shiftEligibleDate(end, direction);
+                if (direction < 0 && candidate < start) return;
+                request.endDate = formatDateInput(candidate);
+            }
+
+            request.days = calculateBusinessDays(request.startDate, request.endDate);
+            saveData();
+            renderCalendar();
+            updateStats();
+            renderLedger();
         }
 
         function showAlert(message, type) {
@@ -900,6 +1060,12 @@ tml lang="en">
                 month: 'short', 
                 day: 'numeric' 
             });
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>'"]/g, character => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            })[character]);
         }
 
         function parseDateInput(dateStr) {
@@ -936,12 +1102,11 @@ tml lang="en">
                 try {
                     const imported = JSON.parse(e.target.result);
                     if (Array.isArray(imported)) {
-                        ptoRequests = imported;
+                        ptoRequests = normalizeRequests(imported);
                         saveData();
                         renderCalendar();
                         updateStats();
                         renderLedger();
-                        renderSummary();
                         showAlert('Data imported successfully', 'success');
                     }
                 } catch (err) {
