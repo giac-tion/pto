@@ -591,6 +591,32 @@ tml lang="en">
             color: #991b1b;
             border-left: 4px solid var(--red-500);
         }
+
+        .auth-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .auth-status {
+            color: var(--slate-200);
+            font-size: 0.85rem;
+        }
+
+        .auth-button {
+            border: 1px solid var(--slate-200);
+            border-radius: 6px;
+            padding: 0.55rem 0.9rem;
+            background: var(--white);
+            color: var(--slate-700);
+            cursor: pointer;
+        }
+
+        .auth-button:hover {
+            background: var(--slate-100);
+        }
     </style>
 </head>
 <body>
@@ -598,6 +624,10 @@ tml lang="en">
         <header>
             <h1>PTO Tracker</h1>
             <p class="subtitle">Plan and track your paid time off</p>
+            <div class="auth-bar">
+                <span id="authStatus" class="auth-status">Sign in to sync your events</span>
+                <button id="authButton" class="auth-button" type="button">Sign in with Google</button>
+            </div>
         </header>
 
         <div class="grid">
@@ -688,17 +718,26 @@ tml lang="en">
 
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script>
         // Data management
-        const storageKey = 'pto_requests';
-        
-        let ptoRequests = (() => {
-            try {
-                return JSON.parse(localStorage.getItem(storageKey) || '[]');
-            } catch (error) {
-                return [];
-            }
-        })();
+        const firebaseConfig = {
+            apiKey: 'AIzaSyBc-w93vyObX1fGtPRbaj5LnUEyQDPdN0w',
+            authDomain: 'pto-planning.firebaseapp.com',
+            projectId: 'pto-planning',
+            storageBucket: 'pto-planning.firebasestorage.app',
+            messagingSenderId: '913000324328',
+            appId: '1:913000324328:web:5b1a3533d47f041c3d7d5d'
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const firestore = firebase.firestore();
+        let currentUser = null;
+        let unsubscribeFromEvents = null;
+        let ptoRequests = [];
         let currentMonth = new Date().getMonth();
         let currentYear = new Date().getFullYear();
 
@@ -741,8 +780,6 @@ tml lang="en">
             { date: '2028-11-24', name: 'Day after Thanksgiving', kind: 'half' },
             { date: '2028-12-25', name: 'Christmas Day', kind: 'full' }
         ];
-
-        ptoRequests = normalizeRequests(ptoRequests);
 
         function normalizeRequests(requests) {
             return requests.filter(request => isValidDateInput(request.startDate) && isValidDateInput(request.endDate))
@@ -789,7 +826,50 @@ tml lang="en">
             updateStats();
             renderLedger();
             setupEventListeners();
+            setupFirebaseAuth();
         });
+
+        function setupFirebaseAuth() {
+            document.getElementById('authButton').addEventListener('click', () => {
+                if (currentUser) {
+                    auth.signOut();
+                    return;
+                }
+                auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(error => {
+                    showAlert(`Sign-in failed: ${error.message}`, 'error');
+                });
+            });
+
+            auth.onAuthStateChanged(user => {
+                currentUser = user;
+                const status = document.getElementById('authStatus');
+                const button = document.getElementById('authButton');
+                if (unsubscribeFromEvents) {
+                    unsubscribeFromEvents();
+                    unsubscribeFromEvents = null;
+                }
+
+                if (!user) {
+                    ptoRequests = [];
+                    status.textContent = 'Sign in to sync your events';
+                    button.textContent = 'Sign in with Google';
+                    renderCalendar();
+                    updateStats();
+                    renderLedger();
+                    return;
+                }
+
+                status.textContent = `Signed in as ${user.email || user.displayName || 'Google user'}`;
+                button.textContent = 'Sign out';
+                unsubscribeFromEvents = firestore.collection('users').doc(user.uid).collection('events')
+                    .onSnapshot(snapshot => {
+                        ptoRequests = normalizeRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                        renderCalendar();
+                        updateStats();
+                        renderLedger();
+                    }, error => showAlert(`Could not load events: ${error.message}`, 'error'));
+            });
+        }
 
         function setDefaultDates() {
             const today = new Date();
@@ -805,6 +885,11 @@ tml lang="en">
 
         function handleSubmit(e) {
             e.preventDefault();
+
+            if (!currentUser) {
+                showAlert('Sign in before adding an event', 'error');
+                return;
+            }
             
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
@@ -817,7 +902,7 @@ tml lang="en">
             }
 
             const newRequest = {
-                id: Date.now(),
+                id: String(Date.now()),
                 startDate,
                 endDate,
                 type: ptoType,
@@ -826,8 +911,7 @@ tml lang="en">
                 created: new Date().toISOString()
             };
 
-            ptoRequests.push(newRequest);
-            saveData();
+            saveRequest(newRequest);
             showAlert('Event added successfully', 'success');
             document.getElementById('requestForm').reset();
             setDefaultDates();
@@ -1011,7 +1095,9 @@ tml lang="en">
 
         function deleteRequest(id) {
             ptoRequests = ptoRequests.filter(req => req.id !== id);
-            saveData();
+            if (currentUser) {
+                eventsCollection().doc(String(id)).delete().catch(error => showAlert(`Could not delete event: ${error.message}`, 'error'));
+            }
             renderCalendar();
             updateStats();
             renderLedger();
@@ -1026,7 +1112,7 @@ tml lang="en">
 
         function adjustEvent(id, edge) {
             const request = ptoRequests.find(item => item.id === id);
-            if (!request) return;
+            if (!request || !currentUser) return;
 
             const start = parseDateInput(request.startDate);
             const end = parseDateInput(request.endDate);
@@ -1042,7 +1128,7 @@ tml lang="en">
             }
 
             request.days = calculateBusinessDays(request.startDate, request.endDate);
-            saveData();
+            saveRequest(request);
             renderCalendar();
             updateStats();
             renderLedger();
@@ -1080,8 +1166,26 @@ tml lang="en">
             return `${year}-${month}-${day}`;
         }
 
+        function eventsCollection() {
+            return firestore.collection('users').doc(currentUser.uid).collection('events');
+        }
+
+        function saveRequest(request) {
+            if (!currentUser) return;
+            const { id, ...eventData } = request;
+            eventsCollection().doc(String(id)).set(eventData).catch(error => {
+                showAlert(`Could not save event: ${error.message}`, 'error');
+            });
+        }
+
         function saveData() {
-            localStorage.setItem(storageKey, JSON.stringify(ptoRequests));
+            if (!currentUser) return;
+            const batch = firestore.batch();
+            ptoRequests.forEach(request => {
+                const { id, ...eventData } = request;
+                batch.set(eventsCollection().doc(String(id)), eventData);
+            });
+            batch.commit().catch(error => showAlert(`Could not save events: ${error.message}`, 'error'));
         }
 
         // Export data as JSON
