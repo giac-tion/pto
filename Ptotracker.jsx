@@ -17,10 +17,10 @@ const PTOTracker = () => {
   useEffect(() => {
     // Set default dates
     const today = new Date();
-    const start = today.toISOString().split('T')[0];
+    const start = formatDateInput(today);
     const end = new Date(today);
     end.setDate(end.getDate() + 7);
-    const endStr = end.toISOString().split('T')[0];
+    const endStr = formatDateInput(end);
     
     setStartDate(start);
     setEndDate(endStr);
@@ -32,8 +32,8 @@ const PTOTracker = () => {
 
   const calculateBusinessDays = (start, end) => {
     let count = 0;
-    const current = new Date(start);
-    const endDate = new Date(end);
+    const current = parseDateInput(start);
+    const endDate = parseDateInput(end);
 
     while (current <= endDate) {
       const dayOfWeek = current.getDay();
@@ -48,7 +48,7 @@ const PTOTracker = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (new Date(startDate) > new Date(endDate)) {
+    if (parseDateInput(startDate) > parseDateInput(endDate)) {
       showAlert('End date must be after start date', 'error');
       return;
     }
@@ -69,10 +69,10 @@ const PTOTracker = () => {
     
     // Reset form
     const today = new Date();
-    const start = today.toISOString().split('T')[0];
+    const start = formatDateInput(today);
     const end = new Date(today);
     end.setDate(end.getDate() + 7);
-    const endStr = end.toISOString().split('T')[0];
+    const endStr = formatDateInput(end);
     
     setStartDate(start);
     setEndDate(endStr);
@@ -104,7 +104,7 @@ const PTOTracker = () => {
   };
 
   const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('en-US', { 
+    return parseDateInput(dateStr).toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric' 
     });
@@ -112,13 +112,25 @@ const PTOTracker = () => {
 
   const getPTOForDate = (date) => {
     for (let req of requests) {
-      const start = new Date(req.startDate);
-      const end = new Date(req.endDate);
+      const start = parseDateInput(req.startDate);
+      const end = parseDateInput(req.endDate);
       if (date >= start && date <= end) {
         return req;
       }
     }
     return null;
+  };
+
+  const parseDateInput = (dateStr) => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  const formatDateInput = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const stats = {
