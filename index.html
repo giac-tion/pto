@@ -241,6 +241,32 @@ tml lang="en">
             position: relative;
         }
 
+        .calendar td:not(.other-month) {
+            cursor: pointer;
+        }
+
+        .calendar td.calendar-selected {
+            z-index: 1;
+            outline: 3px solid var(--blue-500);
+            outline-offset: -3px;
+            animation: calendar-selection-pulse 0.55s ease-out;
+        }
+
+        @keyframes calendar-selection-pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.65);
+            }
+            100% {
+                box-shadow: 0 0 0 9px rgba(59, 130, 246, 0);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .calendar td.calendar-selected {
+                animation: none;
+            }
+        }
+
         .calendar td.other-month {
             background: var(--slate-50);
             color: var(--slate-400);
@@ -302,6 +328,21 @@ tml lang="en">
             border: 1px solid var(--slate-200);
             background: var(--white);
             color: var(--slate-700);
+
+        .event-edit-fields {
+            display: grid;
+            grid-template-columns: minmax(120px, 1fr) auto;
+            gap: 0.35rem;
+        }
+
+        .event-edit-fields input,
+        .event-edit-fields select {
+            min-width: 0;
+            padding: 0.35rem;
+            border: 1px solid var(--slate-200);
+            border-radius: 4px;
+            font: inherit;
+        }
             border-radius: 4px;
             cursor: pointer;
         }
@@ -738,6 +779,7 @@ tml lang="en">
         let currentUser = null;
         let unsubscribeFromEvents = null;
         let ptoRequests = [];
+        let selectedCalendarDate = null;
         let currentMonth = new Date().getMonth();
         let currentYear = new Date().getFullYear();
 
@@ -992,6 +1034,9 @@ tml lang="en">
                 if (row.cells.length === 7) row = table.insertRow();
                 const cellDate = new Date(year, month, day);
                 const cell = row.insertCell();
+                cell.dataset.date = formatDateInput(cellDate);
+                cell.addEventListener('click', () => selectCalendarDate(cellDate));
+                if (cell.dataset.date === selectedCalendarDate) cell.classList.add('calendar-selected');
                 const holiday = getHoliday(cellDate);
                 const ptoOnDate = getPTOForDate(cellDate);
                 cell.innerHTML = `<div class="calendar-number">${day}</div>`;
@@ -1050,6 +1095,21 @@ tml lang="en">
             return null;
         }
 
+        function selectCalendarDate(date) {
+            const selectedDate = formatDateInput(date);
+            selectedCalendarDate = selectedDate;
+            document.querySelectorAll('.calendar-selected').forEach(cell => cell.classList.remove('calendar-selected'));
+            const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
+            if (selectedCell) {
+                selectedCell.classList.remove('calendar-selected');
+                void selectedCell.offsetWidth;
+                selectedCell.classList.add('calendar-selected');
+            }
+            document.getElementById('startDate').value = selectedDate;
+            document.getElementById('endDate').value = selectedDate;
+            document.getElementById('reason').focus();
+        }
+
         function updateStats() {
             const ptoDays = ptoRequests
                 .filter(req => req.type === 'pto')
@@ -1074,22 +1134,61 @@ tml lang="en">
 
             list.innerHTML = allRequests.map(req => `
                 <tr>
-                    <td><span class="event-reason">${escapeHtml(req.reason || 'Unspecified')}</span></td>
-                    <td><span class="event-type">${req.type.toUpperCase()}</span></td>
+                    <td>${String(editingRequestId) === String(req.id) ? `<div class="event-edit-fields"><input id="edit-reason-${req.id}" value="${escapeHtml(req.reason)}" aria-label="Reason"><input id="edit-start-${req.id}" type="date" value="${req.startDate}" aria-label="Start date"><input id="edit-end-${req.id}" type="date" value="${req.endDate}" aria-label="End date"></div>` : `<span class="event-reason">${escapeHtml(req.reason || 'Unspecified')}</span>`}</td>
+                    <td>${String(editingRequestId) === String(req.id) ? `<select id="edit-type-${req.id}" aria-label="Type"><option value="pto" ${req.type === 'pto' ? 'selected' : ''}>PTO</option><option value="wfh" ${req.type === 'wfh' ? 'selected' : ''}>WFH</option></select>` : `<span class="event-type">${req.type.toUpperCase()}</span>`}</td>
                     <td>${req.days}</td>
                     <td class="event-date">${formatDate(req.startDate)} → ${formatDate(req.endDate)}</td>
                     <td>
                         <div class="event-controls" aria-label="Adjust ${escapeHtml(req.reason || 'event')}">
+                            ${String(editingRequestId) === String(req.id) ? `<button class="event-control" onclick="saveEditedRequest(${JSON.stringify(String(req.id))})" title="Save event">✓</button><button class="event-control" onclick="cancelEdit()" title="Cancel editing">×</button>` : `<button class="event-control" onclick="editRequest(${JSON.stringify(String(req.id))})" title="Edit event">✎</button>`}
+                            ${String(editingRequestId) === String(req.id) ? '' : `
                             <button class="event-control mode-toggle" onclick="toggleAdjustmentMode()" title="Toggle extend or shorten">${adjustmentMode === 'extend' ? '+' : '−'}</button>
                             <button class="event-control" onclick="adjustEvent(${req.id}, 'front')" title="${adjustmentMode === 'extend' ? 'Extend' : 'Shorten'} from front">↑</button>
                             <button class="event-control" onclick="adjustEvent(${req.id}, 'back')" title="${adjustmentMode === 'extend' ? 'Extend' : 'Shorten'} from back">↓</button>
-                            <button class="event-control" onclick="deleteRequest(${req.id})" title="Delete event">×</button>
+                            <button class="event-control" onclick="deleteRequest(${req.id})" title="Delete event">×</button>`}
                         </div>
                     </td>
                 </tr>
             `).join('');
         }
 
+        let editingRequestId = null;
+
+        function editRequest(id) {
+            editingRequestId = id;
+            renderLedger();
+        }
+
+        function cancelEdit() {
+            editingRequestId = null;
+            renderLedger();
+        }
+
+        function saveEditedRequest(id) {
+            const request = ptoRequests.find(item => String(item.id) === String(id));
+            if (!request) return;
+
+            const reason = document.getElementById(`edit-reason-${id}`).value;
+            const startDate = document.getElementById(`edit-start-${id}`).value;
+            const endDate = document.getElementById(`edit-end-${id}`).value;
+            const type = document.getElementById(`edit-type-${id}`).value;
+            if (!isValidDateInput(startDate) || !isValidDateInput(endDate) || parseDateInput(startDate) > parseDateInput(endDate)) {
+                showAlert('End date must be after start date', 'error');
+                return;
+            }
+
+            request.reason = reason;
+            request.startDate = startDate;
+            request.endDate = endDate;
+            request.type = type;
+            request.days = calculateBusinessDays(startDate, endDate);
+            editingRequestId = null;
+            saveRequest(request);
+            renderCalendar();
+            updateStats();
+            renderLedger();
+            showAlert('Event updated successfully', 'success');
+        }
 
 
         function deleteRequest(id) {
