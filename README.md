@@ -21,6 +21,6 @@ An administrator can manage the project from the [Firebase Console](https://cons
 - **Authentication:** manage Google sign-in and authorized domains.
 - **Firestore Database:** inspect event data, configure indexes, and publish security rules.
     - e.g. Giving access to new authorized gmails
-- **Project settings:** update the web app configuration used by `pto-tracker.html`.
+- **Project settings:** update the web app configuration used by `index.html`.
 
-After changing the Firebase web configuration, update the `firebaseConfig` object in `pto-tracker.html`, then commit and push the change so GitHub Pages redeploys the app. Never place service-account private keys or other secret credentials in the repository.
+After changing the Firebase web configuration, update the `firebaseConfig` object in `index.html`, then commit and push the change so GitHub Pages redeploys the app. Never place service-account private keys or other secret credentials in the repository.

@@ -881,6 +881,9 @@ tml lang="en">
 
         function setupEventListeners() {
             document.getElementById('requestForm').addEventListener('submit', handleSubmit);
+            document.getElementById('startDate').addEventListener('change', event => {
+                document.getElementById('endDate').value = event.target.value;
+            });
         }
 
         function handleSubmit(e) {
@@ -982,8 +985,6 @@ tml lang="en">
             for (let index = 0; index < firstDay.getDay(); index++) {
                 const cell = row.insertCell();
                 cell.className = 'other-month';
-                const date = new Date(year, month, index - firstDay.getDay() + 1);
-                cell.textContent = date.getDate();
             }
 
             const today = formatDateInput(new Date());
@@ -1012,11 +1013,9 @@ tml lang="en">
                 }
             }
 
-            let nextDate = 1;
             while (row.cells.length < 7) {
                 const cell = row.insertCell();
                 cell.className = 'other-month';
-                cell.textContent = nextDate++;
             }
             card.appendChild(table);
             return card;
