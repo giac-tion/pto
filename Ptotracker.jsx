@@ -153,7 +153,7 @@ function PTOTracker() {
           <div style={{ ...styles.card, marginTop: '1.5rem', overflowX: 'auto' }}>
             <h2 style={styles.cardTitle}>Event Log</h2>
             <table style={styles.table}><thead><tr><th>Reason</th><th>Type</th><th>Days</th><th>Start / End</th><th>Adjust</th></tr></thead>
-              <tbody>{requests.length === 0 ? <tr><td colSpan="5" style={styles.empty}>No events yet</td></tr> : [...requests].sort((a, b) => new Date(b.created) - new Date(a.created)).map(request => <tr key={request.id}>
+              <tbody>{requests.length === 0 ? <tr><td colSpan="5" style={styles.empty}>No events yet</td></tr> : [...requests].sort((a, b) => parseDateInput(a.startDate) - parseDateInput(b.startDate)).map(request => <tr key={request.id}>
                 <td>{request.reason || 'Unspecified'}</td><td>{request.type.toUpperCase()}</td><td>{request.days}</td><td>{displayDate(request.startDate)} → {displayDate(request.endDate)}</td>
                 <td><div style={styles.controls}>
                   <button style={{ ...styles.smallButton, ...styles.modeButton }} onClick={() => setAdjustmentMode(mode => mode === 'extend' ? 'shorten' : 'extend')} title="Toggle extend or shorten">{adjustmentMode === 'extend' ? '+' : '−'}</button>

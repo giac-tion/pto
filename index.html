@@ -1125,7 +1125,7 @@ tml lang="en">
 
         function renderLedger() {
             const list = document.getElementById('requestList');
-            const allRequests = [...ptoRequests].sort((a, b) => new Date(b.created) - new Date(a.created));
+            const allRequests = [...ptoRequests].sort((a, b) => parseDateInput(a.startDate) - parseDateInput(b.startDate));
 
             if (allRequests.length === 0) {
                 list.innerHTML = '<tr><td colspan="5" class="empty-state">No events yet</td></tr>';
