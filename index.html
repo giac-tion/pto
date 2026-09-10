@@ -931,6 +931,22 @@
             document.getElementById('startDate').addEventListener('change', event => {
                 document.getElementById('endDate').value = event.target.value;
             });
+            document.getElementById('requestList').addEventListener('click', handleLedgerAction);
+        }
+
+        function handleLedgerAction(event) {
+            const button = event.target.closest('button[data-action]');
+            if (!button) return;
+
+            const action = button.dataset.action;
+            const id = button.dataset.id;
+            if (action === 'edit') editRequest(id);
+            if (action === 'save') saveEditedRequest(id);
+            if (action === 'cancel') cancelEdit();
+            if (action === 'toggle-mode') toggleAdjustmentMode();
+            if (action === 'adjust-front') adjustEvent(id, 'front');
+            if (action === 'adjust-back') adjustEvent(id, 'back');
+            if (action === 'delete') deleteRequest(id);
         }
 
         function handleSubmit(e) {
@@ -1148,12 +1164,12 @@
                     <td class="event-date">${formatDate(req.startDate)} → ${formatDate(req.endDate)}</td>
                     <td>
                         <div class="event-controls" aria-label="Adjust ${escapeHtml(req.reason || 'event')}">
-                            ${String(editingRequestId) === String(req.id) ? `<button class="event-control" onclick="saveEditedRequest(${JSON.stringify(String(req.id))})" title="Save event">✓</button><button class="event-control" onclick="cancelEdit()" title="Cancel editing">×</button>` : `<button class="event-control" onclick="editRequest(${JSON.stringify(String(req.id))})" title="Edit event">✎</button>`}
+                            ${String(editingRequestId) === String(req.id) ? `<button class="event-control" data-action="save" data-id="${escapeHtml(req.id)}" title="Save event">✓</button><button class="event-control" data-action="cancel" title="Cancel editing">×</button>` : `<button class="event-control" data-action="edit" data-id="${escapeHtml(req.id)}" title="Edit event">✎</button>`}
                             ${String(editingRequestId) === String(req.id) ? '' : `
-                            <button class="event-control mode-toggle" onclick="toggleAdjustmentMode()" title="Toggle extend or shorten">${adjustmentMode === 'extend' ? '+' : '−'}</button>
-                            <button class="event-control" onclick="adjustEvent(${JSON.stringify(String(req.id))}, 'front')" title="${adjustmentMode === 'extend' ? 'Extend' : 'Shorten'} from front">↑</button>
-                            <button class="event-control" onclick="adjustEvent(${JSON.stringify(String(req.id))}, 'back')" title="${adjustmentMode === 'extend' ? 'Extend' : 'Shorten'} from back">↓</button>
-                            <button class="event-control" onclick="deleteRequest(${JSON.stringify(String(req.id))})" title="Delete event">×</button>`}
+                            <button class="event-control mode-toggle" data-action="toggle-mode" title="Toggle extend or shorten">${adjustmentMode === 'extend' ? '+' : '−'}</button>
+                            <button class="event-control" data-action="adjust-front" data-id="${escapeHtml(req.id)}" title="${adjustmentMode === 'extend' ? 'Extend' : 'Shorten'} from front">↑</button>
+                            <button class="event-control" data-action="adjust-back" data-id="${escapeHtml(req.id)}" title="${adjustmentMode === 'extend' ? 'Extend' : 'Shorten'} from back">↓</button>
+                            <button class="event-control" data-action="delete" data-id="${escapeHtml(req.id)}" title="Delete event">×</button>`}
                         </div>
                     </td>
                 </tr>
@@ -1218,7 +1234,11 @@
 
         function adjustEvent(id, edge) {
             const request = ptoRequests.find(item => String(item.id) === String(id));
-            if (!request || !currentUser) return;
+            if (!request) return;
+            if (!currentUser) {
+                showAlert('Sign in before adjusting an event', 'error');
+                return;
+            }
 
             const start = parseDateInput(request.startDate);
             const end = parseDateInput(request.endDate);
