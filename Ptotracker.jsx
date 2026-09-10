@@ -62,7 +62,7 @@ const normalizeRequests = requests => requests.filter(request => validDateInput(
     id: request.id || Date.now() + Math.random(),
     startDate: request.startDate,
     endDate: request.endDate,
-    type: request.type === 'wfh' ? 'wfh' : 'pto',
+    type: ['wfh', 'comp'].includes(request.type) ? request.type : 'pto',
     reason: request.reason || '',
     days: businessDays(request.startDate, request.endDate),
     created: request.created || new Date().toISOString()
@@ -126,6 +126,7 @@ function PTOTracker() {
   const deleteEvent = id => setRequests(current => current.filter(request => request.id !== id));
   const ptoDays = requests.filter(request => request.type === 'pto').reduce((sum, request) => sum + request.days, 0);
   const wfhDays = requests.filter(request => request.type === 'wfh').reduce((sum, request) => sum + request.days, 0);
+  const compDays = requests.filter(request => request.type === 'comp').reduce((sum, request) => sum + request.days, 0);
 
   return (
     <main style={styles.page}>
@@ -145,7 +146,7 @@ function PTOTracker() {
           <div style={styles.card}>
             <h2 style={styles.cardTitle}>PTO Overview</h2>
             <div style={styles.statsGrid}>
-              <Stat value={Math.max(0, PTO_ALLOWANCE - ptoDays)} label="PTO Days Left" />
+              <Stat value={Math.max(0, PTO_ALLOWANCE - ptoDays + compDays)} label="PTO Days Left" />
               <Stat value={ptoDays} label="PTO Scheduled" />
               <Stat value={wfhDays} label="WFH Scheduled" />
             </div>
@@ -169,7 +170,7 @@ function PTOTracker() {
         <section style={styles.card}><h2 style={styles.cardTitle}>Add Event</h2><form onSubmit={submit}>
           <label style={styles.label}>Reason<input style={styles.input} value={reason} onChange={event => setReason(event.target.value)} placeholder="What's this for?" /></label>
           <div style={styles.formRow}><label style={styles.label}>Start Date<input style={styles.input} type="date" value={startDate} onChange={event => setStartDate(event.target.value)} required /></label><label style={styles.label}>End Date<input style={styles.input} type="date" value={endDate} onChange={event => setEndDate(event.target.value)} required /></label></div>
-          <label style={styles.label}>Type<select style={styles.input} value={type} onChange={event => setType(event.target.value)}><option value="pto">PTO</option><option value="wfh">WFH</option></select></label>
+          <label style={styles.label}>Type<select style={styles.input} value={type} onChange={event => setType(event.target.value)}><option value="pto">PTO</option><option value="wfh">WFH</option><option value="comp">COMP</option></select></label>
           <button style={styles.primary} type="submit">Add Event</button>
         </form></section>
       </div>

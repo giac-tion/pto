@@ -1,4 +1,3 @@
-tml lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -285,6 +284,11 @@ tml lang="en">
 
         .calendar td.pto.wfh {
             background: #e0d5ff;
+            color: var(--slate-900);
+        }
+
+        .calendar td.pto.comp {
+            background: #dcfce7;
             color: var(--slate-900);
         }
 
@@ -749,6 +753,7 @@ tml lang="en">
                             <select id="ptoType" required>
                                 <option value="pto">PTO</option>
                                 <option value="wfh">WFH</option>
+                                <option value="comp">COMP</option>
                             </select>
                         </div>
                         <button type="submit" class="button btn-primary">Add Event</button>
@@ -832,7 +837,7 @@ tml lang="en">
                         id: request.id || Date.now() + Math.random(),
                         startDate,
                         endDate,
-                        type: request.type === 'wfh' ? 'wfh' : 'pto',
+                        type: ['wfh', 'comp'].includes(request.type) ? request.type : 'pto',
                         reason: request.reason || '',
                         days: calculateBusinessDays(startDate, endDate),
                         created: request.created || new Date().toISOString()
@@ -1117,8 +1122,11 @@ tml lang="en">
             const wfhDays = ptoRequests
                 .filter(req => req.type === 'wfh')
                 .reduce((sum, req) => sum + (req.days || 0), 0);
+            const compDays = ptoRequests
+                .filter(req => req.type === 'comp')
+                .reduce((sum, req) => sum + (req.days || 0), 0);
 
-            document.getElementById('totalPTO').textContent = Math.max(0, PTO_ALLOWANCE - ptoDays);
+            document.getElementById('totalPTO').textContent = Math.max(0, PTO_ALLOWANCE - ptoDays + compDays);
             document.getElementById('ptoCount').textContent = ptoDays;
             document.getElementById('wfhCount').textContent = wfhDays;
         }
@@ -1135,7 +1143,7 @@ tml lang="en">
             list.innerHTML = allRequests.map(req => `
                 <tr>
                     <td>${String(editingRequestId) === String(req.id) ? `<div class="event-edit-fields"><input id="edit-reason-${req.id}" value="${escapeHtml(req.reason)}" aria-label="Reason"><input id="edit-start-${req.id}" type="date" value="${req.startDate}" aria-label="Start date"><input id="edit-end-${req.id}" type="date" value="${req.endDate}" aria-label="End date"></div>` : `<span class="event-reason">${escapeHtml(req.reason || 'Unspecified')}</span>`}</td>
-                    <td>${String(editingRequestId) === String(req.id) ? `<select id="edit-type-${req.id}" aria-label="Type"><option value="pto" ${req.type === 'pto' ? 'selected' : ''}>PTO</option><option value="wfh" ${req.type === 'wfh' ? 'selected' : ''}>WFH</option></select>` : `<span class="event-type">${req.type.toUpperCase()}</span>`}</td>
+                    <td>${String(editingRequestId) === String(req.id) ? `<select id="edit-type-${req.id}" aria-label="Type"><option value="pto" ${req.type === 'pto' ? 'selected' : ''}>PTO</option><option value="wfh" ${req.type === 'wfh' ? 'selected' : ''}>WFH</option><option value="comp" ${req.type === 'comp' ? 'selected' : ''}>COMP</option></select>` : `<span class="event-type">${req.type.toUpperCase()}</span>`}</td>
                     <td>${req.days}</td>
                     <td class="event-date">${formatDate(req.startDate)} → ${formatDate(req.endDate)}</td>
                     <td>
@@ -1143,9 +1151,9 @@ tml lang="en">
                             ${String(editingRequestId) === String(req.id) ? `<button class="event-control" onclick="saveEditedRequest(${JSON.stringify(String(req.id))})" title="Save event">✓</button><button class="event-control" onclick="cancelEdit()" title="Cancel editing">×</button>` : `<button class="event-control" onclick="editRequest(${JSON.stringify(String(req.id))})" title="Edit event">✎</button>`}
                             ${String(editingRequestId) === String(req.id) ? '' : `
                             <button class="event-control mode-toggle" onclick="toggleAdjustmentMode()" title="Toggle extend or shorten">${adjustmentMode === 'extend' ? '+' : '−'}</button>
-                            <button class="event-control" onclick="adjustEvent(${req.id}, 'front')" title="${adjustmentMode === 'extend' ? 'Extend' : 'Shorten'} from front">↑</button>
-                            <button class="event-control" onclick="adjustEvent(${req.id}, 'back')" title="${adjustmentMode === 'extend' ? 'Extend' : 'Shorten'} from back">↓</button>
-                            <button class="event-control" onclick="deleteRequest(${req.id})" title="Delete event">×</button>`}
+                            <button class="event-control" onclick="adjustEvent(${JSON.stringify(String(req.id))}, 'front')" title="${adjustmentMode === 'extend' ? 'Extend' : 'Shorten'} from front">↑</button>
+                            <button class="event-control" onclick="adjustEvent(${JSON.stringify(String(req.id))}, 'back')" title="${adjustmentMode === 'extend' ? 'Extend' : 'Shorten'} from back">↓</button>
+                            <button class="event-control" onclick="deleteRequest(${JSON.stringify(String(req.id))})" title="Delete event">×</button>`}
                         </div>
                     </td>
                 </tr>
@@ -1192,7 +1200,7 @@ tml lang="en">
 
 
         function deleteRequest(id) {
-            ptoRequests = ptoRequests.filter(req => req.id !== id);
+            ptoRequests = ptoRequests.filter(req => String(req.id) !== String(id));
             if (currentUser) {
                 eventsCollection().doc(String(id)).delete().catch(error => showAlert(`Could not delete event: ${error.message}`, 'error'));
             }
@@ -1209,7 +1217,7 @@ tml lang="en">
         }
 
         function adjustEvent(id, edge) {
-            const request = ptoRequests.find(item => item.id === id);
+            const request = ptoRequests.find(item => String(item.id) === String(id));
             if (!request || !currentUser) return;
 
             const start = parseDateInput(request.startDate);
